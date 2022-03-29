@@ -11,12 +11,23 @@ package mysql
 import (
 	"context"
 	"database/sql/driver"
+	"fmt"
 	"net"
 )
+
+type ZConnector = connector
+
+func (z *ZConnector) SetConfig(cfg *Config) {
+	z.cfg = cfg
+}
 
 type connector struct {
 	cfg *Config // immutable private copy.
 }
+
+const (
+	AttachConnection = "Attach-Connection"
+)
 
 // Connect implements driver.Connector interface.
 // Connect returns a connection to the database.
@@ -33,24 +44,38 @@ func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
 	mc.parseTime = mc.cfg.ParseTime
 
 	// Connect to Server
-	dialsLock.RLock()
-	dial, ok := dials[mc.cfg.Net]
-	dialsLock.RUnlock()
-	if ok {
-		dctx := ctx
-		if mc.cfg.Timeout > 0 {
-			var cancel context.CancelFunc
-			dctx, cancel = context.WithTimeout(ctx, c.cfg.Timeout)
-			defer cancel()
+	var existFlag bool
+	conn := ctx.Value(AttachConnection)
+	if conn == nil {
+		conn = c.cfg.Context.Value(AttachConnection)
+	}
+	if conn != nil {
+		if tcpConn, ok := conn.(net.Conn); ok {
+			existFlag = true
+			mc.netConn = tcpConn
 		}
-		mc.netConn, err = dial(dctx, mc.cfg.Addr)
-	} else {
-		nd := net.Dialer{Timeout: mc.cfg.Timeout}
-		mc.netConn, err = nd.DialContext(ctx, mc.cfg.Net, mc.cfg.Addr)
 	}
 
-	if err != nil {
-		return nil, err
+	if !existFlag {
+		dialsLock.RLock()
+		dial, ok := dials[mc.cfg.Net]
+		dialsLock.RUnlock()
+		if ok {
+			dctx := ctx
+			if mc.cfg.Timeout > 0 {
+				var cancel context.CancelFunc
+				dctx, cancel = context.WithTimeout(ctx, c.cfg.Timeout)
+				defer cancel()
+			}
+			mc.netConn, err = dial(dctx, mc.cfg.Addr)
+		} else {
+			nd := net.Dialer{Timeout: mc.cfg.Timeout}
+			mc.netConn, err = nd.DialContext(ctx, mc.cfg.Net, mc.cfg.Addr)
+		}
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Enable TCP Keepalives on TCP connections

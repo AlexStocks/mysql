@@ -10,6 +10,7 @@ package mysql
 
 import (
 	"bytes"
+	"context"
 	"crypto/rsa"
 	"crypto/tls"
 	"errors"
@@ -50,6 +51,7 @@ type Config struct {
 	Timeout          time.Duration     // Dial timeout
 	ReadTimeout      time.Duration     // I/O read timeout
 	WriteTimeout     time.Duration     // I/O write timeout
+	Context          context.Context   // context
 
 	AllowAllFiles           bool // Allow all files to be used with LOAD DATA LOCAL INFILE
 	AllowCleartextPasswords bool // Allows the cleartext client side plugin
