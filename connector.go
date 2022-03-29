@@ -15,6 +15,67 @@ import (
 	"net"
 )
 
+/*
+func init() {
+	sql.Register("z-driver", &ZDriver{})
+}
+
+type ZDriver struct {
+	ctx context.Context
+}
+
+func NewZDriver(ctx context.Context) *ZDriver {
+	return &ZDriver{ctx: ctx}
+}
+
+// Open new Connection.
+// See https://github.com/go-sql-driver/mysql#dsn-data-source-name for how
+// the DSN string is formatted
+func (d ZDriver) Open(dsn string) (driver.Conn, error) {
+	cfg, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+	zConnector := &mysql.ZConnector{}
+	zConnector.SetConfig(cfg)
+
+	ctx := d.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return zConnector.Connect(ctx)
+}
+
+// OpenConnector implements driver.DriverContext.
+func (d ZDriver) OpenConnector(dsn string) (driver.Connector, error) {
+	cfg, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+	zConnector := &mysql.ZConnector{}
+	cfg.Context = d.ctx
+	zConnector.SetConfig(cfg)
+	return zConnector, nil
+}
+
+func examples() {
+    dsn := "esmpmain@tcp(" + "127.0.0.1:13306" + ")/" + utils.DBName + "?charset=utf8&timeout=90s&collation=utf8mb4_unicode_ci"
+
+    // test prepare
+	//db, err := zdasDriver.Open(dsn)
+	//if err != nil {
+	//	t.Fatalf("connect dsn %s, got error %v", dsn, err)
+	//}
+	//defer db.Close()
+	// db.Prepare()
+
+    db, err = sql.Open("z-driver", dsn)
+    defer db.Close()
+	db.Query("use " + utils.DBName)
+}
+
+*/
+
 type ZConnector = connector
 
 func (z *ZConnector) SetConfig(cfg *Config) {
@@ -169,3 +230,4 @@ func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
 func (c *connector) Driver() driver.Driver {
 	return &MySQLDriver{}
 }
+
